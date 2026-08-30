@@ -1,4 +1,5 @@
 const express = require("express");
+const {verifyToken} = require("../middleware/verifyToken")
 
 const {
   getLeads,
@@ -9,12 +10,12 @@ const {
 
 const router = express.Router();
 
-router.get("/", getLeads);
+router.get("/", verifyToken, getLeads);
 
-router.get("/:id", getLeadById);
+router.get("/:id", verifyToken , getLeadById);
 
 router.post("/", createLead);
 
-router.delete("/:id", deleteLead);
+router.delete("/:id", verifyToken , deleteLead);
 
 module.exports = router;

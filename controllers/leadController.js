@@ -3,17 +3,29 @@ const {sendWhatsAppMessage} = require("../services/whatsapp")
 const {message} = require("../contants/lead")
 
 const getLeads = async (req, res) => {
-  try {
-    const leads = await Lead.findAll();
+try {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
 
-    res.json(leads);
-  } catch (error) {
-    console.error(error);
+  const { count, rows: leads } = await Lead.findAndCountAll({
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset,
+  });
 
-    res.status(500).json({
-      message: "Failed to fetch leads",
-    });
-  }
+  res.json({
+    total: count,
+    data: leads,
+    next: leads.length === limit ? page + 1 : -1,
+  });
+} catch (error) {
+  console.error(error);
+
+  res.status(500).json({
+    message: "Failed to fetch leads",
+  });
+}
 };
 
 const getLeadById = async (req, res) => {
