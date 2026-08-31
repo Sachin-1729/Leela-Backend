@@ -1,6 +1,7 @@
 const Lead = require("../models/Lead");
 const {sendWhatsAppMessage} = require("../services/whatsapp")
 const {message} = require("../contants/lead")
+const {sendBookingRequest} = require("../services/whatsapp_meta")
 
 const getLeads = async (req, res) => {
 try {
@@ -66,23 +67,37 @@ const createLead = async (req, res) => {
 
 for (const manager of managers) {
   try {
-    await sendWhatsAppMessage(manager, msg);
+    //await sendWhatsAppMessage(manager, name , phone , date);
+    await  sendBookingRequest(manager , name , phone , date)
   } catch (error) {
     console.error(
       `Failed to send WhatsApp to ${manager}:`,
       error.message
     );
+     console.error(
+    "Meta WhatsApp error:",
+    JSON.stringify(
+      error.response?.data || error.message,
+      null,
+      2
+    )
+  );
   }
 }
 
     res.status(201).json(lead);
   } catch (error) {
-    console.error(error);
+  console.error(
+    "Meta WhatsApp error:",
+    JSON.stringify(
+      error.response?.data || error.message,
+      null,
+      2
+    )
+  );
 
-    res.status(500).json({
-      message: "Failed to create lead",
-    });
-  }
+  throw error;
+}
 };
 
 const deleteLead = async (req, res) => {

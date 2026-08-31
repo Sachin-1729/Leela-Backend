@@ -13,10 +13,7 @@ const Category = sequelize.define(
     eventId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: "events",
-        key: "id",
-      },
+      field: "event_id",
     },
 
     name: {
@@ -29,5 +26,12 @@ const Category = sequelize.define(
     timestamps: true,
   }
 );
+
+Category.associate = (models) => {
+  Category.belongsTo(models.Event, {
+    foreignKey: "eventId",
+    as: "event",
+  });
+};
 
 module.exports = Category;

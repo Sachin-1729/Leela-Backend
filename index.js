@@ -9,6 +9,7 @@ const leadRoutes = require("./routes/leadRoutes");
 const usersRoutes = require("./routes/usersRoutes");
 const staffRoutes = require("./routes/staffRoute");
 const eventRoutes = require("./routes/eventRoutes");
+const categoryRoutes = require("./routes/categoryRoute")
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,6 +26,7 @@ app.use("/lead", leadRoutes);
 app.use("/users" , usersRoutes);
 app.use("/staff" , staffRoutes);
 app.use("/event" , eventRoutes);
+app.use("/category" , categoryRoutes);
 
 
 startServer(app, sequelize, PORT);

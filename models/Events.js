@@ -23,7 +23,7 @@ const Event = sequelize.define(
     whatsappNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      field : "whatsapp_number"
+      field: "whatsapp_number",
     },
   },
   {
@@ -31,5 +31,13 @@ const Event = sequelize.define(
     timestamps: true,
   }
 );
+
+// One Event has many Categories
+Event.associate = (models) => {
+  Event.hasMany(models.Category, {
+    foreignKey: "eventId",
+    as: "categories",
+  });
+};
 
 module.exports = Event;
