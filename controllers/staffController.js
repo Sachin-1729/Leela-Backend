@@ -61,7 +61,16 @@ try {
 }
 };
 
+const getAllStaff = async (req , res) => {
+
+    const staff = await Staff.findAll();
+    return res.status(200).json({
+        data: staff
+    })
+}
+
 module.exports = {
     createStaff,
-    getStaffs
+    getStaffs,
+    getAllStaff
 }

@@ -62,9 +62,17 @@ try {
 };
 
 
+const getAllcategory = async (req , res) =>{
+    const category = await Category.findAll();
+    return res.json({
+        data:category
+    })
+}
+
 
 
 module.exports = {
   createCategory,
-  getCategory
+  getCategory,
+  getAllcategory
 };

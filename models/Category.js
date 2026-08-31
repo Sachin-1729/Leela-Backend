@@ -32,6 +32,10 @@ Category.associate = (models) => {
     foreignKey: "eventId",
     as: "event",
   });
-};
 
+  Category.hasMany(models.Task, {
+    foreignKey: "categoryId",
+    as: "tasks",
+  });
+};
 module.exports = Category;

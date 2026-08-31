@@ -10,6 +10,10 @@ const usersRoutes = require("./routes/usersRoutes");
 const staffRoutes = require("./routes/staffRoute");
 const eventRoutes = require("./routes/eventRoutes");
 const categoryRoutes = require("./routes/categoryRoute")
+const taskRoutes = require("./routes/tasksRoute")
+
+// Initialize models + associations
+require("./models/association");
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,6 +31,7 @@ app.use("/users" , usersRoutes);
 app.use("/staff" , staffRoutes);
 app.use("/event" , eventRoutes);
 app.use("/category" , categoryRoutes);
+app.use("/task" , taskRoutes);
 
 
 startServer(app, sequelize, PORT);

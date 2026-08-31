@@ -40,4 +40,6 @@ Event.associate = (models) => {
   });
 };
 
+
+
 module.exports = Event;

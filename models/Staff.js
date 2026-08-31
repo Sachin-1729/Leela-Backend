@@ -26,5 +26,11 @@ const Staff = sequelize.define(
     timestamps: true,
   }
 );
+Staff.associate = (models) => {
+  Staff.hasMany(models.Task, {
+    foreignKey: "staffId",
+    as: "tasks",
+  });
+};
 
 module.exports = Staff;

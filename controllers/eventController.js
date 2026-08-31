@@ -1,4 +1,7 @@
-const Events = require("../models/Events")
+const Events = require("../models/Events");
+const Category = require("../models/Category");
+const Task = require("../models/Tasks");
+const Staff = require("../models/Staff");
 
 
 async function createEvent(req , res)
@@ -44,8 +47,57 @@ async function getEvents(req , res)
 }
 
 
+async function getEventById(req, res) {
+  try {
+    const { id } = req.params;
+
+    const event = await Events.findByPk(id, {
+      include: [
+        {
+          model: Category,
+          as: "categories",
+          include: [
+            {
+              model: Task,
+              as: "tasks",
+              include: [
+                {
+                  model: Staff,
+                  as: "staff",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: event,
+    });
+  } catch (error) {
+    console.error("Error fetching event:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch event",
+      error: error.message,
+    });
+  }
+}
+
+
 
 module.exports = {
     createEvent,
-    getEvents
+    getEvents,
+    getEventById
 }
