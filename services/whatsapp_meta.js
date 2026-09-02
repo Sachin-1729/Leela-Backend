@@ -3,7 +3,7 @@ const axios = require("axios");
 const sendTemplateMessage = async ({
   to,
   templateName,
-  language = "en_US",
+  language = "en",
   parameters = [],
 }) => {
   const url =

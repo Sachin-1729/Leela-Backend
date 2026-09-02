@@ -11,6 +11,7 @@ const staffRoutes = require("./routes/staffRoute");
 const eventRoutes = require("./routes/eventRoutes");
 const categoryRoutes = require("./routes/categoryRoute")
 const taskRoutes = require("./routes/tasksRoute")
+const eventTemplateRoutes = require("./routes/eventTemplateRoutes")
 
 // Initialize models + associations
 require("./models/association");
@@ -32,6 +33,9 @@ app.use("/staff" , staffRoutes);
 app.use("/event" , eventRoutes);
 app.use("/category" , categoryRoutes);
 app.use("/task" , taskRoutes);
+app.use("/template" , eventTemplateRoutes
+
+)
 
 
 startServer(app, sequelize, PORT);

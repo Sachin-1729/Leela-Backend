@@ -3,11 +3,19 @@ const Category = require("./Category");
 const Task = require("./Tasks");
 const Staff = require("./Staff");
 
+const EventTemplate = require("./EventTemplate");
+const CategoryTemplate = require("./CategoryTemplate");
+const TaskTemplate = require("./TaskTemplate");
+
 const db = {
   Event,
   Category,
   Task,
   Staff,
+
+  EventTemplate,
+  CategoryTemplate,
+  TaskTemplate,
 };
 
 // Initialize associations
