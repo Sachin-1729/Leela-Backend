@@ -14,7 +14,7 @@ const taskRoutes = require("./routes/tasksRoute")
 const eventTemplateRoutes = require("./routes/eventTemplateRoutes")
 
 // Initialize models + associations
-require("./models/association");
+require("./models/index");
 
 const PORT = process.env.PORT || 3000;
 
