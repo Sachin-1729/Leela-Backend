@@ -198,6 +198,14 @@ async function createEvent(req, res) {
 async function createReminder(event, type, value, transaction) {
   const eventDate = new Date(event.date);
 
+  // Get the calendar date from the event date
+  // The event date is stored as UTC midnight in the DB.
+  const year = eventDate.getUTCFullYear();
+  const month = String(eventDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(eventDate.getUTCDate()).padStart(2, "0");
+
+  const dateString = `${year}-${month}-${day}`;
+
   const [startHour, startMinute, startSecond = 0] = event.start
     .split(":")
     .map(Number);
@@ -206,11 +214,18 @@ async function createReminder(event, type, value, transaction) {
     .split(":")
     .map(Number);
 
-  const startTime = new Date(eventDate);
-  startTime.setHours(startHour, startMinute, startSecond, 0);
+  // Explicitly treat event start/end as IST (+05:30)
+  const startTime = new Date(
+    `${dateString}T${String(startHour).padStart(2, "0")}:${String(
+      startMinute
+    ).padStart(2, "0")}:${String(startSecond).padStart(2, "0")}+05:30`
+  );
 
-  const endTime = new Date(eventDate);
-  endTime.setHours(endHour, endMinute, endSecond, 0);
+  const endTime = new Date(
+    `${dateString}T${String(endHour).padStart(2, "0")}:${String(
+      endMinute
+    ).padStart(2, "0")}:${String(endSecond).padStart(2, "0")}+05:30`
+  );
 
   let schedule;
 
@@ -236,6 +251,12 @@ async function createReminder(event, type, value, transaction) {
     throw new Error("Invalid reminder type");
   }
 
+  console.log("Reminder schedule:");
+  console.log("Event date:", dateString);
+  console.log("Start IST:", startTime);
+  console.log("End IST:", endTime);
+  console.log("Schedule UTC:", schedule.toISOString());
+
   return await Reminder.create(
     {
       eventid: event.id,
@@ -244,7 +265,6 @@ async function createReminder(event, type, value, transaction) {
     { transaction }
   );
 }
-
 
 
 async function getEvents(req , res)
