@@ -1,6 +1,7 @@
 const EventTemplate = require("../models/EventTemplate");
 const CategoryTemplate = require("../models/CategoryTemplate");
 const TaskTemplate = require("../models/TaskTemplate");
+const Staff = require("../models/Staff")
 
 const getEventTemplates = async (req, res) => {
   try {
@@ -27,10 +28,18 @@ const getEventTemplate = async (req, res) => {
         {
           model: CategoryTemplate,
           as: "categories",
+
           include: [
             {
               model: TaskTemplate,
               as: "tasks",
+
+              include: [
+                {
+                  model: Staff,
+                  as: "staff",
+                },
+              ],
             },
           ],
         },
