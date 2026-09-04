@@ -5,6 +5,7 @@ const Staff = require("../models/Staff");
 const EventTemplate = require("../models/EventTemplate");
 const CategoryTemplate = require("../models/CategoryTemplate");
 const TaskTemplate = require("../models/TaskTemplate");
+const Reminder = require("../models/Reminder");
 
 
 async function createEvent(req, res) {
@@ -13,7 +14,9 @@ async function createEvent(req, res) {
     owner_name,
     whatsapp_number,
     eventName,
-    eventTemplateId
+    eventTemplateId,
+    start,
+    end
   } = req.body;
 
   const transaction = await Events.sequelize.transaction();
@@ -51,6 +54,23 @@ async function createEvent(req, res) {
       });
     }
 
+    if(!start)
+    {
+        await transaction.rollback();
+      return res.status(400).json({
+        error: "Start time is required"
+      });
+
+    }
+
+    if(!end)
+    {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: "End time is required"
+      })
+    }
+
     // -------------------------
     // 2. Get template first
     // -------------------------
@@ -78,7 +98,9 @@ async function createEvent(req, res) {
         date,
         ownerName: owner_name,
         whatsappNumber: whatsapp_number,
-        eventName
+        eventName,
+        start,
+        end
       },
       { transaction }
     );
@@ -140,6 +162,14 @@ async function createEvent(req, res) {
     // 5. Commit transaction
     // -------------------------
 
+    await createReminder(event, "before", 1, transaction);
+    await createReminder(event, "before", 2, transaction);
+    await createReminder(event, "before", 0.5, transaction);
+
+    await createReminder(event, "during", null, transaction);
+
+    await createReminder(event, "after", 1, transaction);
+
     await transaction.commit();
 
     return res.status(201).json({
@@ -163,6 +193,58 @@ async function createEvent(req, res) {
     });
   }
 }
+
+
+async function createReminder(event, type, value, transaction) {
+  const eventDate = new Date(event.date);
+
+  const [startHour, startMinute, startSecond = 0] = event.start
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute, endSecond = 0] = event.end
+    .split(":")
+    .map(Number);
+
+  const startTime = new Date(eventDate);
+  startTime.setHours(startHour, startMinute, startSecond, 0);
+
+  const endTime = new Date(eventDate);
+  endTime.setHours(endHour, endMinute, endSecond, 0);
+
+  let schedule;
+
+  if (type === "before") {
+    schedule = new Date(startTime);
+    schedule.setMinutes(schedule.getMinutes() - value * 60);
+  }
+
+  else if (type === "after") {
+    schedule = new Date(endTime);
+    schedule.setMinutes(schedule.getMinutes() + value * 60);
+  }
+
+  else if (type === "during") {
+    const duration = endTime.getTime() - startTime.getTime();
+
+    schedule = new Date(
+      startTime.getTime() + duration / 2
+    );
+  }
+
+  else {
+    throw new Error("Invalid reminder type");
+  }
+
+  return await Reminder.create(
+    {
+      eventid: event.id,
+      schedule,
+    },
+    { transaction }
+  );
+}
+
 
 
 async function getEvents(req , res)

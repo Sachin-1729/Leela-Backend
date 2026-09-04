@@ -13,6 +13,16 @@ const Event = sequelize.define(
       type: DataTypes.DATE,
       allowNull: false,
     },
+      
+    start: {
+      type: DataTypes.TIME,
+      allowNull: true,
+    },
+
+    end: {
+      type: DataTypes.TIME,
+      allowNull: true,
+    },
 
     ownerName: {
       type: DataTypes.STRING,
@@ -38,7 +48,16 @@ Event.associate = (models) => {
     foreignKey: "eventId",
     as: "categories",
   });
+
+  Event.hasMany(models.Reminder, {
+    foreignKey: "eventid",
+    as: "reminders",
+    onDelete: "CASCADE",
+  });
+
 };
+
+
 
 
 

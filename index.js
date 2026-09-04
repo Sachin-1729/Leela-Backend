@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 require("dotenv").config();
+require("./cron/reminderCron");
 
 const sequelize = require("./config/db");
 const startServer = require("./startup/startServer");
