@@ -15,6 +15,10 @@ cron.schedule("* * * * *", async () => {
 
     try {
         const now = new Date();
+   
+
+        console.log("JS NOW:", now);
+        console.log("JS NOW ISO:", now.toISOString());
 
         const reminders = await Reminder.findAll({
             where: {
@@ -23,7 +27,10 @@ cron.schedule("* * * * *", async () => {
                     [Op.lte]: now,
                 },
             },
+             logging: console.log,
         });
+
+        console.log("FOUND:", reminders.length);
 
         for (const reminder of reminders) {
             console.log("Processing reminder:", reminder.id);
