@@ -76,6 +76,11 @@ cron.schedule("* * * * *", async () => {
 
                     const staff = task.staff;
 
+                      // Only create reminder for pending tasks
+                    if (task?.status !== "pending") {
+                        continue;
+                    }
+
                     if (!staff) {
                         continue;
                     }
