@@ -1,4 +1,16 @@
 const ReminderLog = require("../models/ReminderLog");
+const Task = require("../models/Tasks");
+
+// Text/payload that means "task done"
+const DONE_KEYWORDS = ["done", "✅ done", "completed", "complete"];
+
+const isDone = (value) => {
+    if (!value) return false;
+
+    return DONE_KEYWORDS.includes(
+        String(value).trim().toLowerCase()
+    );
+};
 
 async function webhook(req, res) {
 
@@ -68,86 +80,146 @@ async function webhook(req, res) {
 
             // --------------------------------
             // BUTTON CLICK
+            // template quick reply  -> type "button"
+            // interactive button    -> type "interactive"
             // --------------------------------
-            if (message.type === "button") {
+            const isButtonReply =
+                message.type === "button" ||
+                (message.type === "interactive" &&
+                    message.interactive?.type === "button_reply");
 
-                const buttonText = message.button?.text;
-                const buttonPayload = message.button?.payload;
+            if (!isButtonReply) {
 
-                console.log("Button text:", buttonText);
-                console.log("Button payload:", buttonPayload);
+                console.log("Not a button reply, ignoring");
 
-                // ID of the original WhatsApp message
-                const originalMessageId = message.context?.id;
+                return res.status(200).json({
+                    success: true,
+                });
+            }
+
+            const buttonText =
+                message.button?.text ||
+                message.interactive?.button_reply?.title;
+
+            const buttonPayload =
+                message.button?.payload ||
+                message.interactive?.button_reply?.id;
+
+            console.log("Button text:", buttonText);
+            console.log("Button payload:", buttonPayload);
+
+            // ID of the original WhatsApp message (the reminder we sent)
+            const originalMessageId = message.context?.id;
+
+            console.log(
+                "Original WhatsApp message ID:",
+                originalMessageId
+            );
+
+            if (!originalMessageId) {
+
+                console.log("❌ Original message ID not found");
+
+                return res.status(200).json({
+                    success: true,
+                });
+            }
+
+            // --------------------------------
+            // FIND REMINDER LOG BY MESSAGE ID
+            // --------------------------------
+
+            const reminderLog = await ReminderLog.findOne({
+                where: {
+                    msgid: originalMessageId,
+                },
+                order: [["createdAt", "DESC"]],
+            });
+
+            if (!reminderLog) {
 
                 console.log(
-                    "Original WhatsApp message ID:",
+                    "❌ No ReminderLog found for message:",
                     originalMessageId
                 );
 
-                if (!originalMessageId) {
-
-                    console.log(
-                        "❌ Original message ID not found"
-                    );
-
-                    return res.status(200).json({
-                        success: true,
-                    });
-                }
-
-                // --------------------------------
-                // FIND REMINDER
-                // --------------------------------
-
-                const reminderLog = await ReminderLog.findOne({
-                    where: {
-                        msgid: originalMessageId,
-                    },
+                return res.status(200).json({
+                    success: true,
                 });
+            }
 
-                if (!reminderLog) {
+            console.log("✅ ReminderLog found");
+            console.log("Reminder ID:", reminderLog.reminderid);
+            console.log("Task ID:", reminderLog.taskid);
+            console.log("Staff ID:", reminderLog.staffid);
 
-                    console.log(
-                        "❌ No ReminderLog found for message:",
-                        originalMessageId
-                    );
+            const taskId = reminderLog.taskid;
 
-                    return res.status(200).json({
-                        success: true,
-                    });
-                }
+            console.log("🎯 TASK ID:", taskId);
 
-                console.log("✅ ReminderLog found");
-                console.log("Reminder ID:", reminderLog.reminderid);
-                console.log("Task ID:", reminderLog.taskid);
-                console.log("Staff ID:", reminderLog.staffid);
+            // --------------------------------
+            // HANDLE DONE
+            // --------------------------------
 
-                const taskId = reminderLog.taskid;
+            if (!isDone(buttonPayload) && !isDone(buttonText)) {
 
                 console.log(
-                    "🎯 TASK ID:",
-                    taskId
+                    "Button is not a DONE confirmation, ignoring"
                 );
 
-                // --------------------------------
-                // HANDLE DONE
-                // --------------------------------
-
-                if (buttonPayload === "DONE") {
-
-                    console.log(
-                        `✅ Staff completed task ${taskId}`
-                    );
-
-                    // Update your task here
-                    //
-                    // await Task.update(
-                    //     { status: "completed" },
-                    //     { where: { id: taskId } }
-                    // );
-                }
+                return res.status(200).json({
+                    success: true,
+                });
             }
+
+            const task = await Task.findByPk(taskId);
+
+            if (!task) {
+
+                console.log("❌ Task not found:", taskId);
+
+                return res.status(200).json({
+                    success: true,
+                });
+            }
+
+            // Only the staff the reminder was sent to can complete it
+            if (task.staffId !== reminderLog.staffid) {
+
+                console.log(
+                    "❌ Task staff mismatch",
+                    task.staffId,
+                    reminderLog.staffid
+                );
+
+                return res.status(200).json({
+                    success: true,
+                });
+            }
+
+            // Meta retries webhooks -> keep this idempotent
+            if (task.status === "completed") {
+
+                console.log(
+                    `Task ${taskId} already completed, skipping`
+                );
+
+                return res.status(200).json({
+                    success: true,
+                });
+            }
+
+            await task.update({
+                status: "completed",
+            });
+
+            await reminderLog.update({
+                status: "completed",
+            });
+
+            console.log(
+                `✅ Staff ${reminderLog.staffid} completed task ${taskId}`
+            );
 
             return res.status(200).json({
                 success: true,
