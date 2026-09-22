@@ -29,6 +29,11 @@ const ReminderLog = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    
+    msgid: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
     status: {
       type: DataTypes.STRING,

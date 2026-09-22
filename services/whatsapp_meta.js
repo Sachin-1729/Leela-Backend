@@ -83,35 +83,42 @@ const sendTaskAssigned = async (
   staff,
   name,
   task,
-  deadline
+  event,
+  date,
+  time
 ) => {
   return sendTemplateMessage({
     to: staff,
-    templateName: "task_assigned",
-    parameters: [name, task, deadline],
-  });
-};
-
-
-// Task reminder
-const sendTaskReminder = async (
-  staff,
-  name,
-  task,
-  minutes,
-  deadline
-) => {
-  return sendTemplateMessage({
-    to: staff,
-    templateName: "task_reminder",
+    templateName: "staff_message",
     parameters: [
       name,
       task,
-      minutes,
-      deadline,
+      event,
+      date,
+      time,
     ],
   });
 };
+
+// Task reminder
+  const sendTaskReminder = async (
+    staff,
+    name,
+    task,
+    minutes,
+    deadline
+  ) => {
+    return sendTemplateMessage({
+      to: staff,
+      templateName: "task_reminder",
+      parameters: [
+        name,
+        task,
+        minutes,
+        deadline,
+      ],
+    });
+  };
 
 
 module.exports = {

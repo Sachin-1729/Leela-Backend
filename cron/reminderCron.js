@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { Op } = require("sequelize");
+const {sendTaskAssigned} = require("../services/whatsapp_meta")
 
 const {
     Reminder,
@@ -107,6 +108,26 @@ cron.schedule("* * * * *", async () => {
                     console.log(message);
                     console.log("================================");
 
+                          // Send WhatsApp template
+                        const whatsappResponse = await sendTaskAssigned(
+                            staff.whatsappNumber,
+                            staff.name,
+                            task.title,
+                            event.eventName,
+                            event.date,
+                            event.start
+                        );
+                        const whatsappMessageId = whatsappResponse?.messages?.[0]?.id;
+
+
+                        console.log(
+                            "WhatsApp sent successfully:",
+                            whatsappResponse
+                        );
+                        const messageId = whatsappResponse?.messages?.[0]?.id;
+
+                   console.log("WhatsApp Message ID:", messageId);
+
                     await ReminderLog.create({
                         reminderid: reminder.id,
                         taskid: task.id,
@@ -114,6 +135,8 @@ cron.schedule("* * * * *", async () => {
                         message,
                         status: "sent",
                         sentat: new Date(),
+                        msgid:messageId,
+
                     });
                 }
             }
