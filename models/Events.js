@@ -55,6 +55,12 @@ Event.associate = (models) => {
     onDelete: "CASCADE",
   });
 
+  Event.hasMany(models.EventGuest, {
+    foreignKey: "eventId",
+    as: "guests",
+    onDelete: "CASCADE",
+  });
+
 };
 
 

@@ -7,6 +7,7 @@ const EventTemplate = require("./EventTemplate");
 const CategoryTemplate = require("./CategoryTemplate");
 const TaskTemplate = require("./TaskTemplate");
 const Reminder = require("../models/Reminder")
+const EventGuest = require("./EventGuest");
 
 const db = {
   Event,
@@ -17,7 +18,8 @@ const db = {
   EventTemplate,
   CategoryTemplate,
   TaskTemplate,
-  ReminderLog
+  ReminderLog,
+  EventGuest
 };
 
 // Initialize associations

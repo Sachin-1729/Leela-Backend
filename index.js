@@ -23,7 +23,8 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// Larger limit so big guest lists fit in one request
+app.use(express.json({ limit: "2mb" }));
 
 app.get("/", (req, res) => {
   res.send("Server is running!");
