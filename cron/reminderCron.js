@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 const { Op } = require("sequelize");
 const {sendTaskAssigned} = require("../services/whatsapp_meta")
+const { formatEventDate, formatEventTime } = require("../services/eventFormat");
 
 const {
     Reminder,
@@ -91,6 +92,9 @@ cron.schedule("* * * * *", async () => {
                         continue;
                     }
 
+                    const eventDate = formatEventDate(event.date);
+                    const eventTime = formatEventTime(event.start);
+
                     const message = `
                                                     Dear ${staff.name},
 
@@ -98,8 +102,8 @@ cron.schedule("* * * * *", async () => {
 
                                                     📋 Task: ${task.title}
                                                     🎫 Event: ${event.eventName}
-                                                    📅 Date: ${event.date}
-                                                    ⏰ Time: ${event.start}
+                                                    📅 Date: ${eventDate}
+                                                    ⏰ Time: ${eventTime}
 
                                                     Once the task is completed, please click the button below to confirm.
 
@@ -119,8 +123,8 @@ cron.schedule("* * * * *", async () => {
                             staff.name,
                             task.title,
                             event.eventName,
-                            event.date,
-                            event.start
+                            eventDate,
+                            eventTime
                         );
                         const whatsappMessageId = whatsappResponse?.messages?.[0]?.id;
 
