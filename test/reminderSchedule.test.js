@@ -13,16 +13,19 @@ const {
 const ist = (dateTime) => new Date(`${dateTime}+05:30`);
 
 describe("isValidReminderTime", () => {
-  it("accepts HH:mm values", () => {
-    for (const time of ["00:00", "00:45", "01:30", "09:30", "14:45", "23:59"]) {
+  it("accepts DD:HH:mm values", () => {
+    for (const time of [
+      "00:00:00", "00:00:45", "00:01:30", "00:23:59", "01:00:00", "02:12:30", "99:23:59",
+    ]) {
       assert.equal(isValidReminderTime(time), true, time);
     }
   });
 
   it("rejects anything else", () => {
     const invalid = [
-      "", "1:30", "01:3", "24:00", "12:60", "01:30:00", "1h", "abc",
-      " 01:30", "01:30 ", "01-30", null, undefined, 90,
+      "", "01:30", "1:01:30", "01:1:30", "01:01:3", "100:00:00", "00:24:00",
+      "00:12:60", "00:01:30:00", "1d", "abc", " 00:01:30", "00:01:30 ",
+      "00-01-30", null, undefined, 90,
     ];
 
     for (const time of invalid) {
@@ -44,7 +47,7 @@ describe("isValidReminderType", () => {
 
 describe("validateReminderConfig", () => {
   it("returns null for a valid config", () => {
-    assert.equal(validateReminderConfig({ time: "01:30", name: "before" }), null);
+    assert.equal(validateReminderConfig({ time: "00:01:30", name: "before" }), null);
   });
 
   it("requires time", () => {
@@ -53,21 +56,21 @@ describe("validateReminderConfig", () => {
 
   it("rejects malformed time", () => {
     assert.match(
-      validateReminderConfig({ time: "1 hour", name: "before" }),
-      /HH:mm/
+      validateReminderConfig({ time: "01:30", name: "before" }),
+      /DD:HH:mm/
     );
   });
 
   it("requires before/after", () => {
     assert.match(
-      validateReminderConfig({ time: "01:30" }),
+      validateReminderConfig({ time: "00:01:30" }),
       /Before\/After is required/
     );
   });
 
   it("rejects unsupported before/after values", () => {
     assert.match(
-      validateReminderConfig({ time: "01:30", name: "during" }),
+      validateReminderConfig({ time: "00:01:30", name: "during" }),
       /must be one of/
     );
   });
@@ -97,21 +100,21 @@ describe("calculateReminderSchedule", () => {
 
   it("subtracts the offset for before", () => {
     assert.equal(
-      calculateReminderSchedule(eventStart, "01:30", "before").toISOString(),
+      calculateReminderSchedule(eventStart, "00:01:30", "before").toISOString(),
       ist("2026-10-10T13:30:00").toISOString()
     );
   });
 
   it("adds the offset for after", () => {
     assert.equal(
-      calculateReminderSchedule(eventStart, "02:00", "after").toISOString(),
+      calculateReminderSchedule(eventStart, "00:02:00", "after").toISOString(),
       ist("2026-10-10T17:00:00").toISOString()
     );
   });
 
   it("schedules at the start time for a zero offset", () => {
     assert.equal(
-      calculateReminderSchedule(eventStart, "00:00", "before").toISOString(),
+      calculateReminderSchedule(eventStart, "00:00:00", "before").toISOString(),
       eventStart.toISOString()
     );
   });
@@ -119,7 +122,7 @@ describe("calculateReminderSchedule", () => {
   it("rolls back to the previous day when crossing midnight", () => {
     const start = ist("2026-10-10T00:30:00");
     assert.equal(
-      calculateReminderSchedule(start, "02:00", "before").toISOString(),
+      calculateReminderSchedule(start, "00:02:00", "before").toISOString(),
       ist("2026-10-09T22:30:00").toISOString()
     );
   });
@@ -127,7 +130,7 @@ describe("calculateReminderSchedule", () => {
   it("rolls forward to the next day when crossing midnight", () => {
     const start = ist("2026-10-10T23:00:00");
     assert.equal(
-      calculateReminderSchedule(start, "01:15", "after").toISOString(),
+      calculateReminderSchedule(start, "00:01:15", "after").toISOString(),
       ist("2026-10-11T00:15:00").toISOString()
     );
   });
@@ -135,13 +138,34 @@ describe("calculateReminderSchedule", () => {
   it("crosses month and year boundaries", () => {
     const start = ist("2027-01-01T00:30:00");
     assert.equal(
-      calculateReminderSchedule(start, "01:00", "before").toISOString(),
+      calculateReminderSchedule(start, "00:01:00", "before").toISOString(),
       ist("2026-12-31T23:30:00").toISOString()
     );
   });
 
+  it("supports offsets of more than 24 hours before", () => {
+    assert.equal(
+      calculateReminderSchedule(eventStart, "02:03:15", "before").toISOString(),
+      ist("2026-10-08T11:45:00").toISOString()
+    );
+  });
+
+  it("supports offsets of more than 24 hours after", () => {
+    assert.equal(
+      calculateReminderSchedule(eventStart, "01:10:00", "after").toISOString(),
+      ist("2026-10-12T01:00:00").toISOString()
+    );
+  });
+
+  it("supports whole-day offsets", () => {
+    assert.equal(
+      calculateReminderSchedule(eventStart, "07:00:00", "before").toISOString(),
+      ist("2026-10-03T15:00:00").toISOString()
+    );
+  });
+
   it("rejects invalid configs", () => {
-    assert.throws(() => calculateReminderSchedule(eventStart, "1:30", "before"));
-    assert.throws(() => calculateReminderSchedule(eventStart, "01:30", "during"));
+    assert.throws(() => calculateReminderSchedule(eventStart, "01:30", "before"));
+    assert.throws(() => calculateReminderSchedule(eventStart, "00:01:30", "during"));
   });
 });

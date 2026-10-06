@@ -1,8 +1,9 @@
 // Reminder scheduling driven by Event Template Task configuration.
-// A task template stores an offset (`time`, HH:mm) and a direction (`name`,
+// A task template stores an offset (`time`, DD:HH:mm) and a direction (`name`,
 // "before" | "after") relative to the real event's start time.
 
-const REMINDER_TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+// DD:HH:mm — days 00-99, hours 00-23, minutes 00-59
+const REMINDER_TIME_REGEX = /^\d{2}:([01]\d|2[0-3]):[0-5]\d$/;
 const REMINDER_TYPES = ["before", "after"];
 
 // Event start times are entered in IST.
@@ -23,7 +24,7 @@ function validateReminderConfig({ time, name }) {
   }
 
   if (!isValidReminderTime(time)) {
-    return "Time must be in HH:mm format (e.g. 01:30)";
+    return "Time must be in DD:HH:mm format (e.g. 01:02:30)";
   }
 
   if (name === undefined || name === null || name === "") {
@@ -38,8 +39,8 @@ function validateReminderConfig({ time, name }) {
 }
 
 function reminderTimeToMinutes(time) {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
+  const [days, hours, minutes] = time.split(":").map(Number);
+  return days * 24 * 60 + hours * 60 + minutes;
 }
 
 // Combines the event's calendar date (stored as UTC midnight) with its

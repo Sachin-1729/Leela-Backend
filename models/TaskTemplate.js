@@ -29,14 +29,14 @@ const TaskTemplate = sequelize.define(
       allowNull: false,
     },
 
-    // Reminder offset from the event start, HH:mm
+    // Reminder offset from the event start, DD:HH:mm
     time: {
-      type: DataTypes.STRING(5),
+      type: DataTypes.STRING(8),
       allowNull: true,
       validate: {
         is: {
           args: REMINDER_TIME_REGEX,
-          msg: "Time must be in HH:mm format",
+          msg: "Time must be in DD:HH:mm format",
         },
       },
     },
