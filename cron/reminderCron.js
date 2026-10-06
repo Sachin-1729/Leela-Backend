@@ -75,6 +75,11 @@ cron.schedule("* * * * *", async () => {
             for (const category of event.categories) {
                 for (const task of category.tasks) {
 
+                    // Template-driven reminders target a single task
+                    if (reminder.taskid && task.id !== reminder.taskid) {
+                        continue;
+                    }
+
                     const staff = task.staff;
 
                       // Only create reminder for pending tasks

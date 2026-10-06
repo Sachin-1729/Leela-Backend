@@ -15,6 +15,30 @@ const Reminder = sequelize.define(
       onDelete: "CASCADE",
     },
 
+    // The real task this reminder is for
+    taskid: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "tasks",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    },
+
+    // The template task whose time/name produced the schedule
+    tasktemplateid: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "tasktemplate",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
+
     schedule: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -36,6 +60,16 @@ Reminder.associate = (models) => {
   Reminder.belongsTo(models.Event, {
     foreignKey: "eventid",
     as: "event",
+  });
+
+  Reminder.belongsTo(models.Task, {
+    foreignKey: "taskid",
+    as: "task",
+  });
+
+  Reminder.belongsTo(models.TaskTemplate, {
+    foreignKey: "tasktemplateid",
+    as: "taskTemplate",
   });
 
   Reminder.hasMany(models.ReminderLog, {

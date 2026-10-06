@@ -1,7 +1,7 @@
 const Lead = require("../models/Lead");
 const {sendWhatsAppMessage} = require("../services/whatsapp")
 const {message} = require("../contants/lead")
-const {sendBookingRequest} = require("../services/whatsapp_meta")
+const {sendLeadToManager, sendLeadToClient} = require("../services/whatsapp_meta")
 
 const getLeads = async (req, res) => {
 try {
@@ -49,12 +49,13 @@ const getLeadById = async (req, res) => {
 
 const createLead = async (req, res) => {
   try {
-    const { name, phone, date } = req.body;
+    const { name, phone, date , event} = req.body;
 
     const lead = await Lead.create({
       name,
       phone,
-      date
+      date,
+      event,
     });
 
     const msg = message(name , phone , date);
@@ -68,7 +69,7 @@ const createLead = async (req, res) => {
 for (const manager of managers) {
   try {
     //await sendWhatsAppMessage(manager, name , phone , date);
-    await  sendBookingRequest(manager , name , phone , date)
+    await  sendLeadToManager(manager , name , phone , date)
   } catch (error) {
     console.error(
       `Failed to send WhatsApp to ${manager}:`,
@@ -85,6 +86,25 @@ for (const manager of managers) {
   }
 }
 
+if (phone) {
+  // Meta needs the number with country code; assume India for 10-digit numbers
+  const digits = String(phone).replace(/\D/g, "");
+  const clientPhone = digits.length === 10 ? `91${digits}` : digits;
+
+  try {
+    await sendLeadToClient(clientPhone, name, date, event);
+  } catch (error) {
+    console.error(
+      `Failed to send WhatsApp to client ${clientPhone}:`,
+      JSON.stringify(
+        error.response?.data || error.message,
+        null,
+        2
+      )
+    );
+  }
+}
+
     res.status(201).json(lead);
   } catch (error) {
   console.error(
@@ -98,6 +118,32 @@ for (const manager of managers) {
 
   throw error;
 }
+};
+
+const updateLeadRemarks = async (req, res) => {
+  try {
+    const { remarks } = req.body;
+
+    const lead = await Lead.findByPk(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({
+        message: "Lead not found",
+      });
+    }
+
+    lead.remarks = typeof remarks === "string" && remarks.trim() ? remarks.trim() : null;
+
+    await lead.save();
+
+    res.json(lead);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to update lead remarks",
+    });
+  }
 };
 
 const deleteLead = async (req, res) => {
@@ -126,5 +172,6 @@ module.exports = {
   getLeads,
   getLeadById,
   createLead,
+  updateLeadRemarks,
   deleteLead,
 };

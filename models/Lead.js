@@ -24,6 +24,16 @@ const Lead = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+
+    event: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    remarks: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     tableName: "leads",

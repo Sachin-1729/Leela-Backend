@@ -2,6 +2,7 @@ const EventTemplate = require("../models/EventTemplate");
 const CategoryTemplate = require("../models/CategoryTemplate");
 const TaskTemplate = require("../models/TaskTemplate");
 const Staff = require("../models/Staff")
+const { validateReminderConfig } = require("../services/reminderSchedule");
 
 const getEventTemplates = async (req, res) => {
   try {
@@ -228,8 +229,16 @@ const deleteCategoryTemplate = async (req, res) => {
 
 const createTaskTemplate = async (req, res) => {
   try {
-    const { title, staffId } = req.body;
+    const { title, staffId, time, name } = req.body;
     const { categoryTemplateId } = req.params;
+
+    const reminderError = validateReminderConfig({ time, name });
+
+    if (reminderError) {
+      return res.status(400).json({
+        message: reminderError,
+      });
+    }
 
     const category = await CategoryTemplate.findByPk(categoryTemplateId);
 
@@ -243,6 +252,8 @@ const createTaskTemplate = async (req, res) => {
       title,
       staffId,
       categoryTemplateId,
+      time,
+      name,
     });
 
     res.status(201).json(task);
@@ -257,7 +268,15 @@ const createTaskTemplate = async (req, res) => {
 
 const updateTaskTemplate = async (req, res) => {
   try {
-    const { title, staffId } = req.body;
+    const { title, staffId, time, name } = req.body;
+
+    const reminderError = validateReminderConfig({ time, name });
+
+    if (reminderError) {
+      return res.status(400).json({
+        message: reminderError,
+      });
+    }
 
     const task = await TaskTemplate.findByPk(req.params.id);
 
@@ -269,8 +288,19 @@ const updateTaskTemplate = async (req, res) => {
 
     task.title = title;
     task.staffId = staffId;
+    task.time = time;
+    task.name = name;
 
     await task.save();
+
+    await task.reload({
+      include: [
+        {
+          model: Staff,
+          as: "staff",
+        },
+      ],
+    });
 
     res.json(task);
   } catch (error) {

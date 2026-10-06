@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const Events = require("../models/Events");
 const Category = require("../models/Category");
 const Task = require("../models/Tasks");
@@ -5,7 +6,7 @@ const Staff = require("../models/Staff");
 const EventTemplate = require("../models/EventTemplate");
 const CategoryTemplate = require("../models/CategoryTemplate");
 const TaskTemplate = require("../models/TaskTemplate");
-const Reminder = require("../models/Reminder");
+const { createTaskReminder } = require("../services/taskReminder");
 
 
 async function createEvent(req, res) {
@@ -69,6 +70,31 @@ async function createEvent(req, res) {
       return res.status(400).json({
         error: "End time is required"
       })
+    }
+
+    const toSeconds = (time) => {
+      const [h = 0, m = 0, s = 0] = String(time).split(":").map(Number);
+      return h * 3600 + m * 60 + s;
+    };
+
+    if (toSeconds(start) >= toSeconds(end)) {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: "End time must be after start time"
+      });
+    }
+
+    // -------------------------
+    // Check slot availability
+    // -------------------------
+
+    const conflictingEvent = await findConflictingEvent(date, start, end, transaction);
+
+    if (conflictingEvent) {
+      await transaction.rollback();
+      return res.status(409).json({
+        error: `This slot is already booked by "${conflictingEvent.eventName}" (${conflictingEvent.start} - ${conflictingEvent.end}) on this date`
+      });
     }
 
     // -------------------------
@@ -145,14 +171,24 @@ async function createEvent(req, res) {
               );
             }
 
-            await Task.create(
+            const task = await Task.create(
               {
                 categoryId: category.id,
                 title: taskData.title,
-                staffId: taskData.staff.id
+                staffId: taskData.staff.id,
+                time: taskData.time,
+                name: taskData.name
               },
               { transaction }
             );
+
+            // Template tasks without a reminder config get no reminder
+            if (taskData.time && taskData.name) {
+              await createTaskReminder(event, task, {
+                transaction,
+                taskTemplateId: taskData.id,
+              });
+            }
           }
         }
       }
@@ -161,14 +197,6 @@ async function createEvent(req, res) {
     // -------------------------
     // 5. Commit transaction
     // -------------------------
-
-    await createReminder(event, "before", 1, transaction);
-    await createReminder(event, "before", 2, transaction);
-    await createReminder(event, "before", 0.5, transaction);
-
-    await createReminder(event, "during", null, transaction);
-
-    await createReminder(event, "after", 1, transaction);
 
     await transaction.commit();
 
@@ -195,75 +223,31 @@ async function createEvent(req, res) {
 }
 
 
-async function createReminder(event, type, value, transaction) {
-  const eventDate = new Date(event.date);
+// Returns an event on the same calendar date whose time range overlaps [start, end).
+// Back-to-back events (one ends exactly when the other starts) are allowed.
+async function findConflictingEvent(date, start, end, transaction) {
+  const eventDate = new Date(date);
 
-  // Get the calendar date from the event date
-  // The event date is stored as UTC midnight in the DB.
-  const year = eventDate.getUTCFullYear();
-  const month = String(eventDate.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(eventDate.getUTCDate()).padStart(2, "0");
-
-  const dateString = `${year}-${month}-${day}`;
-
-  const [startHour, startMinute, startSecond = 0] = event.start
-    .split(":")
-    .map(Number);
-
-  const [endHour, endMinute, endSecond = 0] = event.end
-    .split(":")
-    .map(Number);
-
-  // Explicitly treat event start/end as IST (+05:30)
-  const startTime = new Date(
-    `${dateString}T${String(startHour).padStart(2, "0")}:${String(
-      startMinute
-    ).padStart(2, "0")}:${String(startSecond).padStart(2, "0")}+05:30`
-  );
-
-  const endTime = new Date(
-    `${dateString}T${String(endHour).padStart(2, "0")}:${String(
-      endMinute
-    ).padStart(2, "0")}:${String(endSecond).padStart(2, "0")}+05:30`
-  );
-
-  let schedule;
-
-  if (type === "before") {
-    schedule = new Date(startTime);
-    schedule.setMinutes(schedule.getMinutes() - value * 60);
+  if (isNaN(eventDate.getTime())) {
+    throw new Error("Invalid date");
   }
 
-  else if (type === "after") {
-    schedule = new Date(endTime);
-    schedule.setMinutes(schedule.getMinutes() + value * 60);
-  }
+  // Event dates are stored as UTC midnight, so match on the UTC calendar day
+  const dayStart = new Date(Date.UTC(
+    eventDate.getUTCFullYear(),
+    eventDate.getUTCMonth(),
+    eventDate.getUTCDate()
+  ));
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  else if (type === "during") {
-    const duration = endTime.getTime() - startTime.getTime();
-
-    schedule = new Date(
-      startTime.getTime() + duration / 2
-    );
-  }
-
-  else {
-    throw new Error("Invalid reminder type");
-  }
-
-  console.log("Reminder schedule:");
-  console.log("Event date:", dateString);
-  console.log("Start IST:", startTime);
-  console.log("End IST:", endTime);
-  console.log("Schedule UTC:", schedule.toISOString());
-
-  return await Reminder.create(
-    {
-      eventid: event.id,
-      schedule,
+  return await Events.findOne({
+    where: {
+      date: { [Op.gte]: dayStart, [Op.lt]: dayEnd },
+      start: { [Op.lt]: end },
+      end: { [Op.gt]: start },
     },
-    { transaction }
-  );
+    transaction,
+  });
 }
 
 

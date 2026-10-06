@@ -28,10 +28,18 @@ const sendTemplateMessage = async ({
         components: [
           {
             type: "body",
-            parameters: parameters.map((value) => ({
-              type: "text",
-              text: String(value),
-            })),
+            // Array -> positional params ({{1}}, {{2}}...)
+            // Object -> named params ({{client_name}}...)
+            parameters: Array.isArray(parameters)
+              ? parameters.map((value) => ({
+                  type: "text",
+                  text: String(value),
+                }))
+              : Object.entries(parameters).map(([key, value]) => ({
+                  type: "text",
+                  parameter_name: key,
+                  text: String(value),
+                })),
           },
         ],
       },
@@ -59,6 +67,40 @@ const sendBookingRequest = async (
     to: manager,
     templateName: "new_booking_request",
     parameters: [name, phone, date],
+  });
+};
+
+
+// New lead -> manager
+const sendLeadToManager = async (
+  manager,
+  name,
+  phone,
+  date
+) => {
+  return sendTemplateMessage({
+    to: manager,
+    templateName: "lead_manager",
+    parameters: [name, phone, date],
+  });
+};
+
+
+// New lead -> client
+const sendLeadToClient = async (
+  client,
+  name,
+  date,
+  event
+) => {
+  return sendTemplateMessage({
+    to: client,
+    templateName: "client_lead",
+    parameters: {
+      client_name: name,
+      event_date: date,
+      event: event
+    },
   });
 };
 
@@ -124,6 +166,8 @@ const sendTaskAssigned = async (
 module.exports = {
   sendTemplateMessage,
   sendBookingRequest,
+  sendLeadToManager,
+  sendLeadToClient,
   sendBookingConfirmation,
   sendTaskAssigned,
   sendTaskReminder,
