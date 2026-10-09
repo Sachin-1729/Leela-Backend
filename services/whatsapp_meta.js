@@ -181,8 +181,26 @@ const sendGuestInvitation = async (
 };
 
 
+// Community join request -> manager (community_join template)
+// {{1}} name, {{2}} community, {{3}} mobile
+const sendCommunityJoinToManager = async (
+  manager,
+  name,
+  community,
+  phone
+) => {
+  return sendTemplateMessage({
+    to: manager,
+    templateName: "community_join",
+    language: "en",
+    parameters: [name, community, phone],
+  });
+};
+
+
 module.exports = {
   sendTemplateMessage,
+  sendCommunityJoinToManager,
   sendBookingRequest,
   sendLeadToManager,
   sendLeadToClient,

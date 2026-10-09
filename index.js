@@ -14,6 +14,7 @@ const categoryRoutes = require("./routes/categoryRoute")
 const taskRoutes = require("./routes/tasksRoute")
 const eventTemplateRoutes = require("./routes/eventTemplateRoutes")
 const webhookRoute = require("./routes/webhookRoute")
+const communityRequestRoutes = require("./routes/communityRequestRoutes")
 
 // Initialize models + associations
 require("./models/index");
@@ -38,6 +39,7 @@ app.use("/category" , categoryRoutes);
 app.use("/task" , taskRoutes);
 app.use("/template" , eventTemplateRoutes);
 app.use("/webhook" , webhookRoute);
+app.use("/community" , communityRequestRoutes);
 
 
 startServer(app, sequelize, PORT);
