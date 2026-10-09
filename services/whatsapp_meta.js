@@ -163,6 +163,24 @@ const sendTaskAssigned = async (
   };
 
 
+// Guest invitation (guest_invitation template)
+// {{1}} guest name, {{2}} on behalf of (client), {{3}} message, {{4}} link
+const sendGuestInvitation = async (
+  guest,
+  name,
+  onBehalfOf,
+  message,
+  link
+) => {
+  return sendTemplateMessage({
+    to: guest,
+    templateName:"guest_message",
+    language:  "en",
+    parameters: [name, onBehalfOf, message, link],
+  });
+};
+
+
 module.exports = {
   sendTemplateMessage,
   sendBookingRequest,
@@ -171,4 +189,5 @@ module.exports = {
   sendBookingConfirmation,
   sendTaskAssigned,
   sendTaskReminder,
+  sendGuestInvitation,
 };

@@ -1,5 +1,6 @@
 const ReminderLog = require("../models/ReminderLog");
 const Task = require("../models/Tasks");
+const GuestInvitation = require("../models/GuestInvitation");
 
 // Text/payload that means "task done"
 const DONE_KEYWORDS = ["done", "✅ done", "completed", "complete"];
@@ -62,6 +63,28 @@ async function webhook(req, res) {
             const value = changes?.value;
 
             const messages = value?.messages;
+
+            // --------------------------------
+            // DELIVERY STATUS (guest invitations)
+            // Meta can accept a message and fail delivery later
+            // --------------------------------
+            for (const status of value?.statuses || []) {
+
+                if (status.status !== "failed" || !status.id) {
+                    continue;
+                }
+
+                await GuestInvitation.update(
+                    {
+                        status: "failed",
+                        error:
+                            status.errors?.[0]?.error_data?.details ||
+                            status.errors?.[0]?.title ||
+                            "Delivery failed",
+                    },
+                    { where: { msgid: status.id } }
+                );
+            }
 
             // No incoming message
             if (!messages || messages.length === 0) {
